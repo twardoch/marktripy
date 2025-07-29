@@ -85,3 +85,6 @@ var/
 venv.bak/
 venv/
 wheels/
+
+# Generated version file
+src/marktripy/_version.py
