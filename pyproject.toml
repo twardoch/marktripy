@@ -1,6 +1,10 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
 [project]
 name = "marktripy"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A Python package for converting Markdown to AST and back to Markdown"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -29,9 +33,9 @@ dependencies = [
 marktripy = "marktripy.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/marktripy"
-Repository = "https://github.com/yourusername/marktripy"
-Issues = "https://github.com/yourusername/marktripy/issues"
+Homepage = "https://github.com/twardoch/marktripy"
+Repository = "https://github.com/twardoch/marktripy"
+Issues = "https://github.com/twardoch/marktripy/issues"
 
 [dependency-groups]
 dev = [
@@ -39,9 +43,49 @@ dev = [
     "hypothesis>=6.136.6",
     "mypy>=1.14.1",
     "pytest>=8.4.1",
+    "pytest-benchmark>=5.1.0",
     "pytest-cov>=6.2.1",
     "ruff>=0.12.5",
     "twine>=6.0.2",
+    "hatch>=1.15.0",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/marktripy/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/marktripy",
+    "/tests",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/marktripy"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=8.4.1",
+    "pytest-benchmark>=5.1.0",
+    "pytest-cov>=6.2.1",
+    "hypothesis>=6.136.6",
+]
+
+[tool.hatch.envs.test]
+template = "default"
+
+[tool.hatch.envs.test.scripts]
+run = "pytest {args}"
+cov = "pytest --cov=marktripy --cov-report=html {args}"
+benchmark = "pytest -k benchmark {args}"
+no-benchmark = "pytest -k 'not benchmark' {args}"
+
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+    "pytest-benchmark>=5.1.0",
+    "hypothesis>=6.136.6",
 ]
 
 [tool.pytest.ini_options]
@@ -50,10 +94,10 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "--cov=marktripy",
-    "--cov-report=html",
-    "--cov-report=term-missing",
     "--verbose",
+]
+markers = [
+    "benchmark: marks tests as benchmark tests (deselect with '-k not benchmark')",
 ]
 
 [tool.black]
@@ -64,6 +108,7 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = [
@@ -80,18 +125,52 @@ select = [
     "RET",  # flake8-return
     "SIM",  # flake8-simplify
     "PTH",  # flake8-use-pathlib
+    "ARG",  # flake8-unused-arguments
+    "ERA",  # eradicate
+    "PD",   # pandas-vet
+    "PGH",  # pygrep-hooks
+    "PL",   # pylint
+    "TRY",  # tryceratops
+    "NPY",  # numpy
+    "RUF",  # ruff-specific rules
 ]
 ignore = [
-    "E501",  # line too long (handled by black)
-    "B008",  # do not perform function calls in argument defaults
+    "E501",    # line too long (handled by black)
+    "B008",    # do not perform function calls in argument defaults
+    "PLR0913", # too many arguments to function call
+    "TRY003",  # avoid specifying long messages outside the exception class
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["T20"]  # Allow print statements in tests
+"tests/*" = ["T20", "ARG", "PLR2004"]  # Allow print statements and magic values in tests
+
+[tool.ruff.lint.isort]
+known-first-party = ["marktripy"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+no_implicit_reexport = true
+namespace_packages = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "fire.*",
+    "mistletoe.*",
+    "markdown_it.*",
+]
+ignore_missing_imports = true
 
 [tool.coverage.run]
 branch = true
-source = ["marktripy"]
+source = ["src"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -103,4 +182,19 @@ exclude_lines = [
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# Development setup instructions:
+# 1. Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+# 2. Create virtual environment: uv venv --python 3.12
+# 3. Activate: source .venv/bin/activate
+# 4. Install in dev mode: uv pip install -e ".[dev]"
+# 5. Run tests: pytest
+# 6. Run without benchmarks: pytest -k 'not benchmark'
+# 7. Or use hatch: hatch test
