@@ -1,0 +1,20 @@
+# this_file: .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      development-dependencies:
+        patterns:
+          - "black"
+          - "mypy"
+          - "pytest*"
+          - "ruff"
+          - "twine"
+  
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
