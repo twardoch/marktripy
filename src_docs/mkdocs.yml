@@ -1,0 +1,99 @@
+site_name: marktripy Documentation
+site_description: A Python package for converting Markdown to AST and back to Markdown
+site_author: Adam
+site_url: https://twardoch.github.io/marktripy
+
+repo_name: twardoch/marktripy
+repo_url: https://github.com/twardoch/marktripy
+edit_uri: edit/master/src_docs/md/
+
+copyright: Copyright &copy; 2025 Adam
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+      primary: indigo
+      accent: indigo
+    # Palette toggle for dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+      primary: indigo
+      accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: installation.md
+    - Quick Start: quickstart.md
+  - User Guide:
+    - Core Concepts: core-concepts.md
+    - AST Manipulation: ast-manipulation.md
+    - Extensions System: extensions.md
+    - Transformers: transformers.md
+  - Advanced:
+    - Performance: performance.md
+    - CLI Usage: cli.md
+    - API Reference: api-reference.md
+
+docs_dir: md
+site_dir: ../docs
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/twardoch/marktripy
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/marktripy/
+
+extra_css:
+  - stylesheets/extra.css

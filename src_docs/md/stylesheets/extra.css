@@ -1,0 +1,19 @@
+.md-typeset .highlight {
+  margin: 1em 0;
+}
+
+.md-typeset pre {
+  padding: 1em;
+}
+
+.md-typeset code {
+  word-break: break-word;
+}
+
+.md-content__button {
+  color: var(--md-primary-fg-color);
+}
+
+.md-tabs__link--active {
+  color: var(--md-accent-fg-color);
+}
