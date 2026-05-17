@@ -90,11 +90,7 @@ uvx hatch clean || true
 
 # Step 2: Run gitnextver to create version tag
 echo -e "${YELLOW}→ Running gitnextver...${NC}"
-if command -v gitnextver &> /dev/null; then
-    gitnextver || echo -e "${YELLOW}↔ gitnextver failed or not configured${NC}"
-else
-    echo -e "${YELLOW}↔ gitnextver not found, skipping version bump${NC}"
-fi
+uvx gitnextver || echo -e "${YELLOW}↔ gitnextver failed${NC}"
 
 # Step 3: Build the package
 echo -e "${YELLOW}→ Building package...${NC}"
