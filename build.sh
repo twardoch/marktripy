@@ -1,33 +1,19 @@
 #!/usr/bin/env bash
 # this_file: build.sh
-# Build script for this Python package
-
-# Change to script directory
-cd "$(dirname "$0")"
-
-set -e
-
-# Color output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-echo -e "${BLUE}Building package...${NC}"
-
-# Clean build artifacts
-echo -e "${YELLOW}→ Cleaning...${NC}"
-uvx hatch clean || true
-
-# Run tests if they exist
-if [ -d "tests" ] || grep -q "pytest" pyproject.toml; then
-    echo -e "${YELLOW}→ Running tests...${NC}"
-    uvx hatch test || echo -e "${YELLOW}↔ Tests failed or not configured${NC}"
+# Build the documentation (docs/) and the Python package (dist/).
+# Usage: ./build.sh [all|docs|package]   (default: all)
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+target="${1:-all}"
+case "$target" in
+  all|docs|package) ;;
+  *) echo "usage: $0 [all|docs|package]" >&2; exit 2 ;;
+esac
+if [[ "$target" == all || "$target" == docs ]]; then
+  src_docs/build.sh
 fi
-
-# Build the package
-echo -e "${YELLOW}→ Building package...${NC}"
-uvx hatch build
-
-echo -e "${GREEN}✅ Build completed successfully${NC}"
+if [[ "$target" == all || "$target" == package ]]; then
+  rm -rf dist
+  uv build
+  uvx twine check dist/*
+fi

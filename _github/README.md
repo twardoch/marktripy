@@ -4,18 +4,10 @@ This directory contains the planned GitHub Actions workflows for the marktripy p
 
 ## Workflows
 
-### `docs.yml`
-Builds and deploys MkDocs documentation to GitHub Pages.
-
-**Triggers:**
-- Push to `master`/`main` branch with changes to `src_docs/`
-- Pull requests modifying documentation
-
-**Features:**
-- Builds documentation from `src_docs/` using MkDocs Material theme
-- Deploys to GitHub Pages automatically
-- Uses caching for faster builds
-- Strict mode to catch documentation errors
+### `docs.yml` (removed)
+Documentation is now built by the active workflow `.github/workflows/docs.yml`,
+which runs `src_docs/build.sh` and commits the rebuilt `docs/` folder.
+The site is served at https://vexy.dev/vexy-marktripy/.
 
 ### `test.yml`
 Runs the test suite for the marktripy package.
@@ -59,13 +51,6 @@ Keeps dependencies up to date automatically.
 
 ## Customization
 
-### Documentation Build
-Modify `docs.yml` to:
-- Change Python version
-- Add additional MkDocs plugins
-- Customize build commands
-- Change deployment targets
-
 ### Testing
 Modify `test.yml` to:
 - Add more Python versions
@@ -82,7 +67,7 @@ Modify `dependabot.yml` to:
 ## Troubleshooting
 
 ### Documentation Build Fails
-- Check MkDocs configuration in `src_docs/mkdocs.yml`
+- Check the ProperDocs configuration in `src_docs/mkdocs.yml`
 - Verify all documentation files are valid Markdown
 - Ensure all links are working
 
@@ -96,20 +81,12 @@ Modify `dependabot.yml` to:
 - Check that the repository is public (or GitHub Pro/Team for private repos)
 - Verify the workflow has necessary permissions
 
-## Manual Deployment
-
-To build and deploy documentation manually:
+## Building the documentation locally
 
 ```bash
-# Install MkDocs
-pip install mkdocs mkdocs-material mkdocstrings[python]
+# Strict build of src_docs/md/ into docs/
+src_docs/build.sh
 
-# Build documentation
-cd src_docs
-mkdocs build
-
-# Serve locally for testing
-mkdocs serve
+# Live preview on http://127.0.0.1:8000
+src_docs/build.sh serve
 ```
-
-The built documentation will be in the `docs/` directory, ready for deployment to any static hosting service.

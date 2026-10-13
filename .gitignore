@@ -88,3 +88,11 @@ wheels/
 
 # Generated version file
 src/marktripy/_version.py
+
+# Tooling and generated output
+.omc/
+.ruff_cache/
+site/
+node_modules/
+.benchmarks/
+.codegraph/

@@ -10,12 +10,14 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
-    { name = "Adam", email = "adam@example.com" }
+    { name = "Adam Twardoch", email = "adam+github@twardoch.com" }
 ]
 keywords = ["markdown", "ast", "parser", "converter", "commonmark"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Topic :: Text Processing :: Markup",
@@ -29,13 +31,11 @@ dependencies = [
     "rich>=14.1.0",
 ]
 
-[project.scripts]
-marktripy = "marktripy.cli:main"
-
 [project.urls]
-Homepage = "https://github.com/twardoch/marktripy"
-Repository = "https://github.com/twardoch/marktripy"
-Issues = "https://github.com/twardoch/marktripy/issues"
+Documentation = "https://vexy.dev/vexy-marktripy/"
+Homepage = "https://github.com/vexyart/vexy-marktripy"
+Repository = "https://github.com/vexyart/vexy-marktripy"
+Issues = "https://github.com/vexyart/vexy-marktripy/issues"
 
 [dependency-groups]
 dev = [

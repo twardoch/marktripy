@@ -35,4 +35,4 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
         uv pip install twine
-        uv run twine upload dist/*
+        uv run twine upload --skip-existing dist/*

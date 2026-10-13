@@ -1,5 +1,7 @@
 # marktripy
 
+**Documentation:** https://vexy.dev/vexy-marktripy/
+
 **TL;DR**: A Python package for parsing Markdown to AST, manipulating the tree structure, and serializing back to Markdown while preserving formatting. Built on `markdown-it-py` and `mistletoe` for maximum flexibility.
 
 ```python
@@ -28,8 +30,8 @@ pip install marktripy
 uv add marktripy
 
 # Development installation
-git clone https://github.com/yourusername/marktripy
-cd marktripy
+git clone https://github.com/vexyart/vexy-marktripy
+cd vexy-marktripy
 uv sync --dev
 ```
 

@@ -1,103 +1,54 @@
-# marktripy Documentation
+# marktripy
 
-## TL;DR
-
-**marktripy** is a Python package for converting Markdown to AST (Abstract Syntax Tree), manipulating the tree structure, and serializing back to Markdown while preserving formatting. Built on `markdown-it-py` and `mistletoe` for maximum flexibility and extensibility.
+`marktripy` turns Markdown text into a tree of Python objects, lets you change that tree, and writes it back out as Markdown or HTML. The PyPI package is called `marktripy`; the source lives in the `vexyart/vexy-marktripy` repository.
 
 ```python
-from marktripy import parse_markdown, render_markdown
+from marktripy.core.parser import ParserRegistry
+from marktripy.parsers import markdown_it  # importing the module registers the parser
+from marktripy.renderers.markdown import MarkdownRenderer
 
-# Parse Markdown to AST
-ast = parse_markdown("# Hello\n\nThis is **bold** text.")
+parser = ParserRegistry.create("markdown-it")
+doc = parser.parse("# Hello\n\nThis is **bold** text.\n")
 
-# Manipulate AST (e.g., downgrade headings)
-for node in ast.walk():
-    if node.type == "heading":
-        node.level += 1
+for node in doc.find_all("heading"):
+    node.level += 1
 
-# Render back to Markdown
-markdown = render_markdown(ast)
-# Output: "## Hello\n\nThis is **bold** text."
+print(MarkdownRenderer().render(doc))
+# ## Hello
+#
+# This is **bold** text.
 ```
 
-## What marktripy Does
+## What the package does
 
-- **Parse** Markdown documents into a manipulable AST
-- **Transform** document structure programmatically  
-- **Extend** Markdown syntax with custom elements
-- **Preserve** formatting during round-trip conversions
-- **Generate** HTML, JSON, and other formats from AST
-- **Validate** document structure and links
+Every operation follows the same three stages:
 
-## Documentation Roadmap
+1. **Parse.** A parser adapter reads Markdown text and builds a `Document` node. Two adapters ship with the package: one built on `markdown-it-py` and one built on `mistletoe`.
+2. **Change.** You edit the tree directly, or you run *transformers* (heading level changes, heading IDs, a table of contents, reference-style links) and *extensions* (strikethrough, task lists, `++key++` keyboard notation).
+3. **Render.** A renderer walks the tree and produces text. `MarkdownRenderer` writes Markdown, `HTMLRenderer` writes HTML.
 
-This documentation is organized into 9 comprehensive chapters:
+All three stages share one node model, described in [The AST](ast.md). Because both parsers produce the same node types, a transformer or renderer does not need to know which parser built the tree.
 
-### 1. [Installation](installation.md)
-Learn how to install marktripy using pip, uv, or from source. Covers virtual environments, development setup, and dependency management.
+## Project status
 
-### 2. [Quick Start](quickstart.md) 
-Get up and running in minutes with basic examples of parsing, manipulating, and rendering Markdown. Perfect for first-time users.
+The package is at an early stage (`Development Status :: 3 - Alpha` in `pyproject.toml`). The core parse → change → render loop works and is covered by the test suite, but some parts are incomplete:
 
-### 3. [Core Concepts](core-concepts.md)
-Deep dive into marktripy's architecture: AST structure, parser backends, rendering pipeline, and the unified node system.
+- There is no top-level convenience API. You import classes from their modules, for example `marktripy.core.parser.ParserRegistry`. The names `parse_markdown`, `render_markdown` and `markdown_to_html` shown in older README examples do not exist.
+- There is no command-line tool.
+- Several behaviours have known gaps, for example table bodies from the `markdown-it` adapter and `[[TOC]]` marker replacement. See [Known limitations](limitations.md) before you rely on a feature.
 
-### 4. [AST Manipulation](ast-manipulation.md)
-Master the art of programmatically modifying document structure: traversing nodes, transforming content, and preserving metadata.
+## Where to go next
 
-### 5. [Extensions System](extensions.md)
-Create custom Markdown syntax extensions: from simple text replacements to complex block-level elements with custom rendering.
-
-### 6. [Transformers](transformers.md)
-Use built-in transformers and create your own: heading manipulation, link processing, TOC generation, and content validation.
-
-### 7. [Performance](performance.md)
-Optimize for speed and memory: choosing the right parser backend, streaming large documents, and performance benchmarking.
-
-### 8. [CLI Usage](cli.md)
-Master the command-line interface: batch processing, validation tools, transformation pipelines, and integration scripts.
-
-### 9. [API Reference](api-reference.md)
-Complete API documentation with detailed class and method references, generated from docstrings with examples.
-
-## Why marktripy?
-
-The Python ecosystem has many Markdown parsers, but none perfectly address the need for **clean AST manipulation**, **round-trip conversion**, **extensibility**, and **performance** in one package. 
-
-marktripy combines the best ideas from existing libraries:
-
-- **Dual-parser architecture** for flexibility
-- **Unified AST format** for consistency  
-- **Plugin-first design** for extensibility
-- **Type safety** with full type hints
-- **Standards compliance** with CommonMark and GFM
-
-## Quick Navigation
-
-=== "New Users"
-    1. [Installation](installation.md) - Get set up
-    2. [Quick Start](quickstart.md) - Basic examples
-    3. [Core Concepts](core-concepts.md) - Understand the architecture
-
-=== "Developers"
-    1. [AST Manipulation](ast-manipulation.md) - Programmatic document editing
-    2. [Extensions System](extensions.md) - Custom syntax
-    3. [API Reference](api-reference.md) - Complete documentation
-
-=== "Power Users"
-    1. [Transformers](transformers.md) - Advanced document processing
-    2. [Performance](performance.md) - Optimization techniques
-    3. [CLI Usage](cli.md) - Command-line tools
-
-## Getting Help
-
-- **GitHub Issues**: [Report bugs and request features](https://github.com/twardoch/marktripy/issues)
-- **GitHub Discussions**: [Ask questions and share ideas](https://github.com/twardoch/marktripy/discussions)
-- **Examples**: Check the `/examples` directory in the repository
-- **Research**: See `/ref` directory for library comparison and design decisions
-
-## Next Steps
-
-Ready to get started? Head to the [Installation](installation.md) guide to set up marktripy, then try the [Quick Start](quickstart.md) examples to see it in action.
-
-For a deeper understanding of the design philosophy and technical decisions, explore the research documents in the `/ref` directory of the repository.
+| If you want to… | Read |
+|---|---|
+| Install the package | [Installation](installation.md) |
+| Run a first parse and render | [Quickstart](quickstart.md) |
+| Understand the node classes and tree methods | [The AST](ast.md) |
+| Choose and configure a parser | [Parsers](parsers.md) |
+| Control Markdown or HTML output | [Renderers](renderers.md) |
+| Shift headings, add IDs, build a TOC | [Transformers](transformers.md) |
+| Add strikethrough, task lists or `++key++` | [Extensions](extensions.md) |
+| Check a tree for structural problems | [Validation and utilities](validation.md) |
+| Look up a class or function | [API reference](api.md) |
+| See how the modules fit together | [Architecture](architecture.md) |
+| Run the tests or build the docs | [Contributing](contributing.md) |

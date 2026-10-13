@@ -1,535 +1,158 @@
-# Quick Start Guide
+# Quickstart
 
-Get up and running with marktripy in minutes! This guide covers the most common use cases with practical examples.
+This page follows one small document through a parse, two changes and two renders. Every output shown was produced by running the code against the current source.
 
-## Basic Usage
+Prerequisite: `marktripy` is installed ([Installation](installation.md)).
 
-### Parse and Render Markdown
+## 1. Create a parser
 
-```python
-from marktripy import parse_markdown, render_markdown
-
-# Simple parsing
-markdown_text = """
-# Hello World
-
-This is a **bold** statement and this is *italic*.
-
-- Item 1
-- Item 2
-- Item 3
-"""
-
-# Parse to AST
-ast = parse_markdown(markdown_text)
-
-# Render back to markdown
-result = render_markdown(ast)
-print(result)
-```
-
-### Convert Markdown to HTML
+Parsers are registered by name when their module is imported. Import the module, then ask the registry for an instance:
 
 ```python
-from marktripy import markdown_to_html
+from marktripy.core.parser import ParserRegistry
+from marktripy.parsers import markdown_it  # registers "markdown-it"
 
-html = markdown_to_html("""
-# My Document
+parser = ParserRegistry.create("markdown-it")
+```
 
-Here's some **bold text** and a [link](https://example.com).
+You can also construct the class directly: `markdown_it.MarkdownItParser()`.
+
+## 2. Parse Markdown
 
 ```python
-print("Hello, World!")
+doc = parser.parse("# Hello\n\nThis is **bold** text.\n")
 ```
 
-> This is a blockquote.
-""")
+`doc` is a `Document` node. Its tree looks like this:
 
-print(html)
+```text
+document
+  heading            level=1
+    text             'Hello'
+  paragraph
+    text             'This is '
+    strong
+      text           'bold'
+    text             ' text.'
 ```
 
-## AST Exploration
+Inline formatting is a node with children: `**bold**` became a `strong` node that contains a `text` node.
 
-### Understanding the AST Structure
+## 3. Change the tree
+
+Every node has `walk()` (all nodes, depth first) and `find_all(type)` (all nodes of one type). Headings carry their level in the `level` attribute:
 
 ```python
-from marktripy import parse_markdown
-
-ast = parse_markdown("# Title\n\nSome **bold** text.")
-
-# Walk through all nodes
-for node in ast.walk():
-    print(f"Node type: {node.type}")
-    if hasattr(node, 'content') and node.content:
-        print(f"Content: {node.content}")
-    print("---")
+for heading in doc.find_all("heading"):
+    heading.level += 1
 ```
 
-### Inspecting Node Properties
+The `Heading` constructor rejects levels outside 1–6, but assigning `level` afterwards is not checked. The transformers in [Transformers](transformers.md) clamp levels for you.
+
+## 4. Render Markdown
 
 ```python
-from marktripy import parse_markdown
+from marktripy.renderers.markdown import MarkdownRenderer
 
-ast = parse_markdown("""
-# Main Title {#main}
-
-## Subtitle
-
-Some text with **bold** and *italic* formatting.
-
-[Click here](https://example.com "Link title")
-""")
-
-def inspect_node(node, depth=0):
-    indent = "  " * depth
-    print(f"{indent}{node.type}")
-    
-    # Show attributes if any
-    if hasattr(node, 'attrs') and node.attrs:
-        print(f"{indent}  attrs: {node.attrs}")
-    
-    # Show content for text nodes
-    if hasattr(node, 'content') and node.content:
-        print(f"{indent}  content: {repr(node.content)}")
-    
-    # Recursively inspect children
-    if hasattr(node, 'children'):
-        for child in node.children:
-            inspect_node(child, depth + 1)
-
-inspect_node(ast)
+print(MarkdownRenderer().render(doc))
 ```
 
-## Basic Transformations
+Output:
 
-### Downgrade All Headings
+```markdown
+## Hello
+
+This is **bold** text.
+```
+
+## 5. Render HTML
 
 ```python
-from marktripy import parse_markdown, render_markdown
+from marktripy.renderers.html import HTMLRenderer
 
-markdown = """
-# Chapter 1
-## Section 1.1
-### Subsection 1.1.1
-## Section 1.2
-"""
-
-ast = parse_markdown(markdown)
-
-# Downgrade all headings by one level
-for node in ast.walk():
-    if node.type == "heading" and node.level < 6:
-        node.level += 1
-
-result = render_markdown(ast)
-print(result)
-# Output:
-# ## Chapter 1
-# ### Section 1.1
-# #### Subsection 1.1.1
-# ### Section 1.2
+print(HTMLRenderer().render(doc))
 ```
 
-### Add IDs to Headings
+Output:
+
+```html
+<h2>Hello</h2>
+<p>This is <strong>bold</strong> text.</p>
+```
+
+## 6. Add heading IDs and a table of contents
+
+The transformer modules provide one-call helper functions.
 
 ```python
-from marktripy import parse_markdown, render_markdown
-import re
+from marktripy.transformers.id_generator import add_heading_ids
+from marktripy.transformers.toc import generate_toc
 
-def slugify(text):
-    """Convert text to URL-friendly slug"""
-    return re.sub(r'[^\w\s-]', '', text).strip().lower().replace(' ', '-')
+doc = parser.parse("# Intro\n\n## Setup\n\n## Setup\n\n### Café & Crème\n")
+add_heading_ids(doc)            # changes doc in place
+doc = generate_toc(doc)         # returns a new Document with the TOC inserted
 
-markdown = """
-# Getting Started
-## Installation Guide
-## Quick Examples
-# Advanced Usage
-"""
-
-ast = parse_markdown(markdown)
-
-# Add IDs to all headings
-for node in ast.walk():
-    if node.type == "heading":
-        heading_text = ""
-        # Extract text content from heading
-        for child in node.children:
-            if hasattr(child, 'content'):
-                heading_text += child.content
-        
-        # Create and set ID
-        heading_id = slugify(heading_text)
-        if not hasattr(node, 'attrs'):
-            node.attrs = {}
-        node.attrs['id'] = heading_id
-
-result = render_markdown(ast)
-print(result)
+print(MarkdownRenderer().render(doc))
 ```
 
-### Extract All Links
+Output:
+
+```markdown
+# Intro
+
+## Table of Contents
+
+- [Intro](#intro)
+   - [Setup](#setup)
+   - [Setup](#setup-1)
+      - [Café & Crème](#cafe-creme)
+
+## Setup
+
+## Setup
+
+### Café & Crème
+```
+
+What happened:
+
+- `add_heading_ids` slugified each heading's text. The second `Setup` got the suffix `-1` so IDs stay unique, and the accents were stripped (`Café & Crème` → `cafe-creme`).
+- `generate_toc` collected headings of levels 1–3, built a nested list of links, and inserted it after the first level-1 heading. It returned a copy of the document, so keep the return value.
+
+The IDs are stored in each heading's `attrs` and appear in HTML output (`<h2 id="setup">Setup</h2>`). Markdown has no heading-ID syntax, so `MarkdownRenderer` does not write them.
+
+## 7. Enable GFM features
+
+Strikethrough and task lists need two things: a parser preset that recognises the syntax, and the extension that turns the parsed result into proper nodes and renders them.
 
 ```python
-from marktripy import parse_markdown
+from marktripy.extensions.base import ExtensionManager
+from marktripy.extensions.gfm import GFMExtension
 
-markdown = """
-Check out [Python](https://python.org) and [GitHub](https://github.com).
+parser = ParserRegistry.create("markdown-it", {"preset": "default"})
+html = HTMLRenderer()
 
-Also see: [Local link](./other-page.md)
-"""
+manager = ExtensionManager()
+manager.register(GFMExtension())
+manager.apply_renderer_extensions(html, "html")
 
-ast = parse_markdown(markdown)
-
-links = []
-for node in ast.walk():
-    if node.type == "link":
-        url = node.attrs.get('href', '')
-        title = ""
-        # Extract link text
-        for child in node.children:
-            if hasattr(child, 'content'):
-                title += child.content
-        links.append({'text': title, 'url': url})
-
-for link in links:
-    print(f"'{link['text']}' -> {link['url']}")
+doc = parser.parse("~~old~~ new\n\n- [ ] todo\n- [x] done\n")
+doc = manager.apply_ast_transformations(doc)
+print(html.render(doc))
 ```
 
-## Working with Extensions
+Output (line breaks as produced):
 
-### GitHub Flavored Markdown
-
-```python
-from marktripy import Parser
-
-# Create parser with GFM extensions
-parser = Parser(extensions=['gfm'])
-
-markdown = """
-# Task List
-
-- [x] Completed task
-- [ ] Pending task
-- [x] Another completed task
-
-## Table
-
-| Name | Age | City |
-|------|-----|------|
-| Alice | 30 | NYC |
-| Bob | 25 | LA |
-
-~~Strikethrough text~~
-"""
-
-ast = parser.parse(markdown)
-html = parser.render_html(ast)
-print(html)
+```html
+<p><del>old</del> new</p>
+<ul>
+<li><input type="checkbox" disabled> todo</li><li><input type="checkbox" disabled checked> done</li></ul>
 ```
 
-### Custom Keyboard Extension
+See [Extensions](extensions.md) for the order of these calls and for the `++key++` extension.
 
-```python
-from marktripy import Parser
+## Next steps
 
-# Create parser with keyboard extension
-parser = Parser(extensions=['kbd'])
-
-markdown = """
-To copy text, press ++Ctrl+C++.
-To paste, use ++Ctrl+V++.
-Press ++Alt+F4++ to close the window.
-"""
-
-ast = parser.parse(markdown)
-html = parser.render_html(ast)
-print(html)
-# Output includes: <kbd>Ctrl+C</kbd>, etc.
-```
-
-## Document Analysis
-
-### Count Document Elements
-
-```python
-from marktripy import parse_markdown
-from collections import Counter
-
-markdown = """
-# Document Title
-
-## Introduction
-Some text here.
-
-## Features
-- Feature 1
-- Feature 2
-
-### Details
-More text with **bold** and *italic*.
-
-## Conclusion
-Final thoughts.
-"""
-
-ast = parse_markdown(markdown)
-
-# Count node types
-node_counts = Counter()
-for node in ast.walk():
-    node_counts[node.type] += 1
-
-print("Document structure:")
-for node_type, count in node_counts.most_common():
-    print(f"  {node_type}: {count}")
-```
-
-### Extract Table of Contents
-
-```python
-from marktripy import parse_markdown
-
-def extract_toc(markdown_text):
-    ast = parse_markdown(markdown_text)
-    toc = []
-    
-    for node in ast.walk():
-        if node.type == "heading":
-            # Extract heading text
-            text = ""
-            for child in node.children:
-                if hasattr(child, 'content'):
-                    text += child.content
-            
-            toc.append({
-                'level': node.level,
-                'text': text,
-                'id': text.lower().replace(' ', '-')
-            })
-    
-    return toc
-
-markdown = """
-# User Guide
-## Getting Started
-### Installation
-### Quick Start
-## Advanced Features
-### Extensions
-### Transformers
-## API Reference
-"""
-
-toc = extract_toc(markdown)
-for item in toc:
-    indent = "  " * (item['level'] - 1)
-    print(f"{indent}- [{item['text']}](#{item['id']})")
-```
-
-## File Processing
-
-### Process Single File
-
-```python
-from marktripy import parse_markdown, render_markdown
-from pathlib import Path
-
-def process_file(input_path, output_path, transform_func=None):
-    """Process a markdown file with optional transformation"""
-    
-    # Read input file
-    content = Path(input_path).read_text(encoding='utf-8')
-    
-    # Parse to AST
-    ast = parse_markdown(content)
-    
-    # Apply transformation if provided
-    if transform_func:
-        ast = transform_func(ast)
-    
-    # Render and save
-    result = render_markdown(ast)
-    Path(output_path).write_text(result, encoding='utf-8')
-    
-    print(f"Processed {input_path} -> {output_path}")
-
-# Example transformation: add heading IDs
-def add_heading_ids(ast):
-    for node in ast.walk():
-        if node.type == "heading":
-            text = "".join(child.content for child in node.children 
-                          if hasattr(child, 'content'))
-            heading_id = text.lower().replace(' ', '-')
-            if not hasattr(node, 'attrs'):
-                node.attrs = {}
-            node.attrs['id'] = heading_id
-    return ast
-
-# Process file
-process_file('input.md', 'output.md', add_heading_ids)
-```
-
-### Batch Processing
-
-```python
-from marktripy import parse_markdown, render_markdown
-from pathlib import Path
-
-def batch_process_directory(input_dir, output_dir, pattern="*.md"):
-    """Process all markdown files in a directory"""
-    
-    input_path = Path(input_dir)
-    output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True)
-    
-    for md_file in input_path.glob(pattern):
-        print(f"Processing {md_file.name}...")
-        
-        # Read and parse
-        content = md_file.read_text(encoding='utf-8')
-        ast = parse_markdown(content)
-        
-        # Transform: downgrade headings
-        for node in ast.walk():
-            if node.type == "heading" and node.level < 6:
-                node.level += 1
-        
-        # Save result
-        result = render_markdown(ast)
-        output_file = output_path / md_file.name
-        output_file.write_text(result, encoding='utf-8')
-    
-    print("Batch processing complete!")
-
-# Process all markdown files
-batch_process_directory('docs/', 'processed_docs/')
-```
-
-## Error Handling
-
-### Robust Parsing
-
-```python
-from marktripy import parse_markdown
-import logging
-
-def safe_parse(markdown_text):
-    """Parse markdown with error handling"""
-    try:
-        ast = parse_markdown(markdown_text)
-        return ast, None
-    except Exception as e:
-        logging.error(f"Failed to parse markdown: {e}")
-        return None, str(e)
-
-# Example usage
-markdown = "# Valid heading\n\nSome text..."
-ast, error = safe_parse(markdown)
-
-if ast:
-    print("Parsing successful!")
-    # Process the AST
-else:
-    print(f"Parsing failed: {error}")
-```
-
-### Validation
-
-```python
-from marktripy import parse_markdown
-
-def validate_document(markdown_text):
-    """Validate document structure"""
-    issues = []
-    
-    try:
-        ast = parse_markdown(markdown_text)
-    except Exception as e:
-        return [f"Parse error: {e}"]
-    
-    # Check for heading hierarchy
-    heading_levels = []
-    for node in ast.walk():
-        if node.type == "heading":
-            heading_levels.append(node.level)
-    
-    # Validate heading sequence
-    for i, level in enumerate(heading_levels[1:], 1):
-        prev_level = heading_levels[i-1]
-        if level > prev_level + 1:
-            issues.append(f"Heading level jump: H{prev_level} to H{level}")
-    
-    # Check for empty links
-    for node in ast.walk():
-        if node.type == "link":
-            href = node.attrs.get('href', '')
-            if not href:
-                issues.append("Empty link found")
-    
-    return issues
-
-# Validate document
-markdown = """
-# Title
-### Subsection  # This should be H2
-"""
-
-issues = validate_document(markdown)
-if issues:
-    print("Document issues found:")
-    for issue in issues:
-        print(f"  - {issue}")
-else:
-    print("Document is valid!")
-```
-
-## Next Steps
-
-Now that you've seen the basics:
-
-1. **Learn about [Core Concepts](core-concepts.md)** to understand marktripy's architecture
-2. **Explore [AST Manipulation](ast-manipulation.md)** for advanced document editing
-3. **Try the [Extensions System](extensions.md)** to add custom syntax
-4. **Use [Transformers](transformers.md)** for common document processing tasks
-5. **Check out [CLI Usage](cli.md)** for command-line tools
-
-## Common Patterns
-
-### Document Template Processing
-
-```python
-from marktripy import parse_markdown, render_markdown
-import datetime
-
-def process_template(template_markdown, variables):
-    """Process a markdown template with variables"""
-    ast = parse_markdown(template_markdown)
-    
-    # Replace template variables
-    for node in ast.walk():
-        if hasattr(node, 'content') and node.content:
-            for key, value in variables.items():
-                node.content = node.content.replace(f"{{{key}}}", str(value))
-    
-    return render_markdown(ast)
-
-template = """
-# Report for {date}
-
-## Summary
-Total items processed: {count}
-Status: {status}
-"""
-
-variables = {
-    'date': datetime.date.today().strftime('%Y-%m-%d'),
-    'count': 42,
-    'status': 'Complete'
-}
-
-result = process_template(template, variables)
-print(result)
-```
-
-This quick start guide covers the essential patterns you'll use with marktripy. For more advanced features, continue to the detailed guides!
+- [The AST](ast.md) lists every node class and tree method.
+- [Parsers](parsers.md) explains presets, plugins and the `mistletoe` adapter.
+- [Known limitations](limitations.md) lists the cases that do not round-trip yet.
